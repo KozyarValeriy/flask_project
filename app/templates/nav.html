@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title>File manager</title>
+    </head>
+    <body>
+        <p>
+        {% for file in files.bread %}
+            <a href="/api/v1/openfilder/{{file.folderdullname.replace('\\', '%')}}">{{file.foldername}}</a>
+             >>
+        {% endfor %}
+        </p>
+        <hr>
+        {% for file in files.filelist %}
+            <p><a href="/api/v1/openfilder/{{file.fullfilename.replace('\\', '%')}}">{{file.filename}}</a>
+                -- {{file.type}}
+                -- {{file.size}} bytes
+            </p>
+        {% endfor %}
+    </body>
+</html>
