@@ -1,11 +1,30 @@
-{% extends "base.html" %}
-{% block content %}
-    <h1>Hi, {{user.nickname}}!</h1>
-    {% if posts %}
-        {% for post in posts %}
-            <p>{{post.author.login}} says: <b>{{post.body}}</b></p>
-        {% endfor %}
-    {% else %}
-        <p>No posts</p>
-    {% endif %}
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Title</title>
+	<link type="text/css" rel="stylesheet" href="static/css/main.css">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+				rel="stylesheet">
+</head>
+<body>
+<div class="body">
+	<div class="body__header">
+		<ul id="breads" class="body__breads"></ul>
+	</div>
+	<div class="body__content">
+		<div class="body__sidebar">
+			<ul id="tree" class="body__tree"></ul>
+		</div>
+		<div class="body__view">
+			<div class="body__title-file" id="fileName"></div>
+			<div class="body__file">123</div>
+		</div>
+	</div>
+</div>
+
+<script src="static/js/jquery.min.js"></script>
+<script src="static/js/jquery-ui.min.js"></script>
+<script src="static/js/main.js"></script>
+</body>
+</html>

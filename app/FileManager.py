@@ -1,90 +1,120 @@
+"""
+    Модуль для получения файлов в текущей директории.
+    Используетя для задачи "Просмотр файлов"
+    Версия: 1.0.0
+"""
+
 import os
 
 
-class ListFiles:
-    def __init__(self, start_path: str):
-        self._path = start_path
+# import urllib.parse as urp
 
-    @property
-    def path(self):
-        return self._path
 
-    @path.setter
-    def path(self, new_path: str):
-        if os.path.isdir(new_path):
-            self._path = new_path
-        elif os.path.isdir(self._path + "\\" + new_path):
-            self._path = self._path + "\\" + new_path
+def replace_in_web(current_path: str) -> str:
+    """ Функция для замены символов | на системные разделители
+
+    :param current_path: путь, в котором надо заменить
+    :return: исправленный путь
+    """
+    return current_path.replace(os.path.sep, "|")
+
+
+def replace_in_desk(current_path: str) -> str:
+    """ Функция для замены всех системных разделителей на символ |
+
+    :param current_path: путь, в котором надо заменить
+    :return: исправленный путь
+    """
+    return current_path.replace("|", os.path.sep)
+
+
+def get_split_path(current_path: str) -> list:
+    """ Функция для получения пути ко всем папкам в указанном пути
+
+    :param current_path: путь, который надо разложить на подпути
+    :return: список, содержащий пути ко всем папкам в исходном пути от корня до текущей папки
+    """
+
+    result = []
+    # пока путь не указывает на корень
+    while not os.path.ismount(current_path):
+        # добавляем путь в результат и записываем в путь каталог выше
+        result.append(current_path)
+        current_path = os.path.split(current_path)[0]
+    # записываем корень
+    result.append(current_path)
+    result.reverse()
+    return result
+
+
+def list_dir(new_path: str) -> dict:
+    """ Функция для получения словаря, который содержит:
+    bread - список всех промежуточный путей от корня до текущей директории
+            в виде словарей {"foldername": "Имя_текущей_папки",
+                             "folderfullname": "Путь_до_текущей_папки"}
+    filelist - список из текущих папок и файлов в данной директории
+               в видк словаря {'filename': "Имя_файла",
+                               'size': размер_файла_в_байтах (для папок - 0),
+                               'type': "Тип",  # может быть "file", "folder", "unknown"
+                               'fullfilename': "Полный_путь_до_файла/папки"}
+
+    :param new_path: путь для разбора
+    :return: словарь {"bread": [...], "filelist": [...]}
+    """
+
+    # переменные, где храняться экземпляры папок, файлов и неизвестного типа
+    folder = []
+    file = []
+    unknown = []
+    # результат определяем как словарь (будет содержать два ключа {"bread": [...], "filelist": [...]})
+    result = dict()
+    # разделитель между каталогами
+    sep = os.path.sep
+    # если путь уже заканчивается на разделитель (то есть находимся в корне),
+    # то при формировании полного пути к подкаталогам и файлам не будем добавлять их
+    if new_path.endswith(os.path.sep):
+        sep = ""
+    # обходим все объекты в папке
+    for obj in os.listdir(new_path):
+        current_path = new_path + sep + obj
+        if os.path.isfile(current_path):
+            file.append({'filename': obj,
+                         'size': os.path.getsize(current_path),
+                         'type': 'file',
+                         'fullfilename': replace_in_web(current_path)})  # urp.quote(
+
+        elif os.path.isdir(current_path):
+            folder.append({'filename': obj,
+                           'size': 0,
+                           'type': 'folder',
+                           'fullfilename': replace_in_web(current_path)})  # urp.quote(
         else:
-            print("It's not a dir")
-
-    def list_dir(self):
-        dir = []
-        file = []
-        unknown = []
-        result = {}
-        for obj in os.listdir(self._path):
-            if os.path.isfile(self._path + "\\" + obj):
-                file.append({'filename': obj,
-                             'size': os.path.getsize(self._path + "\\" + obj),
-                             'type': 'file',
-                             'fullfilename': self._path + "\\" + obj})
-
-            elif os.path.isdir(self._path + "\\" + obj):
-                dir.append({'filename': obj,
+            unknown.append({'filename': obj,
                             'size': 0,
-                            'type': 'folder',
-                            'fullfilename': self._path + "\\" + obj})
-            else:
-                unknown.append({'filename': obj,
-                                'size': 0,
-                                'type': 'unknown',
-                                'fullfilename': self._path + "\\" + obj})
+                            'type': 'unknown',
+                            'fullfilename': replace_in_web(current_path)})  # urp.quote(
+    # сортируем по имени
+    folder.sort(key=lambda rec: rec.get('filename'))
+    file.sort(key=lambda rec: rec.get('filename'))
+    unknown.sort(key=lambda rec: rec.get('filename'))
+    # если это не корень, то добавляем в начало возврат на папку выше
+    if not os.path.ismount(new_path):
+        back = {'filename': "..",
+                'size': 0,
+                'type': 'folder',
+                'fullfilename': replace_in_web(os.path.split(new_path)[0])}
+        folder.insert(0, back)
+    result["filelist"] = folder + file + unknown
 
-        dir.sort(key=lambda rec: rec.get('filename'))
-        file.sort(key=lambda rec: rec.get('filename'))
-        unknown.sort(key=lambda rec: rec.get('filename'))
-
-        if not os.path.ismount(self._path):
-            dir = [{'filename': "..",
-                    'size': 0,
-                    'type': 'folder',
-                    'fullfilename': os.path.split(self._path)[0]}] + dir
-
-        result["filelist"] = dir + file + unknown
-
-        bread = []
-        for current_path in self.split_path():
-            if os.path.split(current_path)[1] == "":
-                bread.append({"foldername": os.path.split(current_path)[0],
-                              "folderdullname": os.path.split(current_path)[0]})
-            else:
-                bread.append({"foldername": os.path.split(current_path)[1],
-                              "folderdullname": current_path})
-        result["bread"] = bread
-
-        return result
-
-    def back(self):
-        self._path = os.path.split(self._path)[0]
-
-    def is_file(self, path: str) -> bool:
-        if os.path.isfile(path) or os.path.isfile(self._path + "\\" + path):
-            return True
-        return False
-
-    def is_dir(self, path: str) -> bool:
-        if os.path.isdir(path) or os.path.isdir(self._path + "\\" + path):
-            return True
-        return False
-
-    def split_path(self):
-        result = []
-        path = self.path
-        while os.path.split(path)[1] != "" and path not in result:
-            result.append(path)
-            path = os.path.split(path)[0]
-        result.append(path)
-        result.reverse()
-        return result
-
+    # получаем составляющие текущего пути ("хлебные крошки")
+    bread = []
+    for current_path in get_split_path(new_path):
+        split_path = os.path.split(current_path)
+        if split_path[1] == "":
+            bread.append({"foldername": split_path[0],
+                          "folderfullname": replace_in_web(split_path[0])})  # urp.quote(
+        else:
+            bread.append({"foldername": split_path[1],
+                          "folderfullname": replace_in_web(current_path)})  # urp.quote(
+    result["bread"] = bread
+    return result
