@@ -7,9 +7,6 @@
 import os
 
 
-# import urllib.parse as urp
-
-
 def replace_in_web(current_path: str) -> str:
     """ Функция для замены символов | на системные разделители
 
@@ -37,7 +34,8 @@ def get_split_path(current_path: str) -> list:
 
     result = []
     # пока путь не указывает на корень
-    while not os.path.ismount(current_path):
+    # while not os.path.ismount(current_path):
+    while os.path.split(current_path)[1] != "":
         # добавляем путь в результат и записываем в путь каталог выше
         result.append(current_path)
         current_path = os.path.split(current_path)[0]
@@ -74,6 +72,7 @@ def list_dir(new_path: str) -> dict:
     # то при формировании полного пути к подкаталогам и файлам не будем добавлять их
     if new_path.endswith(os.path.sep):
         sep = ""
+
     # обходим все объекты в папке
     for obj in os.listdir(new_path):
         current_path = new_path + sep + obj
@@ -98,7 +97,8 @@ def list_dir(new_path: str) -> dict:
     file.sort(key=lambda rec: rec.get('filename'))
     unknown.sort(key=lambda rec: rec.get('filename'))
     # если это не корень, то добавляем в начало возврат на папку выше
-    if not os.path.ismount(new_path):
+    # if not os.path.ismount(new_path):
+    if os.path.split(new_path)[1] != "":
         back = {'filename': "..",
                 'size': 0,
                 'type': 'folder',
@@ -116,5 +116,7 @@ def list_dir(new_path: str) -> dict:
         else:
             bread.append({"foldername": split_path[1],
                           "folderfullname": replace_in_web(current_path)})  # urp.quote(
+
     result["bread"] = bread
+
     return result

@@ -3,7 +3,10 @@ import os
 from app import app
 from flask import render_template
 from flask import jsonify
-from app import FileManager
+from flask import redirect
+from flask import request
+from app import FileManager, Filer
+from ExternalModule import Parser
 
 
 @app.route('/api/v1/openfolder/<path>')
@@ -24,10 +27,22 @@ def get_navigation2():
 @app.route('/api/v1/openfile/<filename>')
 def open_file(filename):
     filename = FileManager.replace_in_desk(filename)
-    with open(filename, encoding='utf-8') as file:
-        result = file.readlines()
-    return str(result)
-    # return f"Open file: {filename}\n{result}"
+    print(os.path.getsize(filename))
+    if os.path.getsize(filename) > 10000000:
+        start = int(request.args.get('start')) if request.args.get('start') else 0
+        row_count = int(request.args.get('rowCount')) if request.args.get('rowCount') else 500
+        print(start, row_count)
+        # return redirect(f'/api/v1/openfile/{FileManager.replace_in_web(filename)}/0/500')
+        file = Parser.WindowFromFile(filename, header=True)
+        return jsonify(file.get_numbers_rows(start, row_count))
+    return jsonify(Filer.file_to_json(filename, header=True))
+
+
+@app.route('/api/v1/openfile/<filename>/<int:start>/<int:row_count>')
+def open_big_file(filename, start, row_count):
+    filename = FileManager.replace_in_desk(filename)
+    file = Parser.WindowFromFile(filename, header=True)
+    return jsonify(file.get_numbers_rows(start, row_count))
 
 
 @app.route('/')
