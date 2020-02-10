@@ -3,10 +3,12 @@ import os
 from app import app
 from flask import render_template
 from flask import jsonify
-from flask import redirect
 from flask import request
 from app import FileManager, Filer
 from ExternalModule import Parser
+
+
+FILES_WITHOUT_HEADER = ('.py', '.html', '.css', '.js')
 
 
 @app.route('/api/v1/openfolder/<path>')
@@ -27,15 +29,25 @@ def get_navigation2():
 @app.route('/api/v1/openfile/<filename>')
 def open_file(filename):
     filename = FileManager.replace_in_desk(filename)
+    if filename.endswith(FILES_WITHOUT_HEADER):
+        header = False
+    else:
+        header = True
+    # if os.path.getsize(filename) > 10000000:
+    start = int(request.args.get('startByte')) if request.args.get('startByte') else 0
+    row_count = int(request.args.get('countLines')) if request.args.get('countLines') else 100
+    query = request.args.get('query')
+    # stop = int(request.args.get('stop')) if request.args.get('stop') else 500
+    print(start, row_count, query)
     print(os.path.getsize(filename))
-    if os.path.getsize(filename) > 10000000:
-        start = int(request.args.get('start')) if request.args.get('start') else 0
-        row_count = int(request.args.get('rowCount')) if request.args.get('rowCount') else 500
-        print(start, row_count)
-        # return redirect(f'/api/v1/openfile/{FileManager.replace_in_web(filename)}/0/500')
-        file = Parser.WindowFromFile(filename, header=True)
-        return jsonify(file.get_numbers_rows(start, row_count))
-    return jsonify(Filer.file_to_json(filename, header=True))
+
+    file = Parser.WindowFromFile(filename, header=header)
+    result = file.get_numbers_rows(start, row_count)
+    # result["query"] = query
+    return jsonify(result)
+    # result = Filer.file_to_json(filename, header=header)
+    # # result["query"] = query
+    # return jsonify(result)
 
 
 @app.route('/api/v1/openfile/<filename>/<int:start>/<int:row_count>')
@@ -48,3 +60,19 @@ def open_big_file(filename, start, row_count):
 @app.route('/')
 def main_page():
     return render_template("index.html")
+
+
+# @app.route('/', methods=["POST", "GET"])
+# def main_page():
+#     if request.method == "POST":
+#         query = request.form.get("query")
+#         print(query)
+#         query123 = request.form.get("query123")
+#         print(query)
+#         if query123 is None:
+#             print(None)
+#     else:
+#         query = ""
+#
+#     print(query)
+#     return render_template("test.html")

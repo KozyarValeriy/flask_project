@@ -114,67 +114,99 @@ class WindowFromFile:
             return start_pos + len(self._line_end_char)
         return start_pos
 
-    # def get_row_in_window(self, start: int, end: int) -> list:
-    #     """
-    #     Функция для поиска целых строк по начальному и конечному байту
-    #
-    #     :param start: начальное положение каретки
-    #     :param end: конечное положение каретки
-    #     :return: список из строк, попавших в диапазон
-    #     """
-    #
-    #     result = {}
-    #
-    #     if start > end:
-    #         raise StartEndPositionError("START position must be less then END position")
-    #     with open(self._filename, "rb") as file:
-    #         if not file.readable():
-    #             raise FileError("File can't be read")
-    #         if not file.seekable():
-    #             raise FileError("File can't be seek")
-    #         # получаем длину всего файла в байтах
-    #         file_size = os.path.getsize(self._filename)  # file.seek(0, 2)
-    #         # поиск символа конца строки для исходного файла
-    #         self._get_end_char(file, file_size=file_size)
-    #         if start > file_size:
-    #             raise StartEndPositionError("START position must be less then size of file")
-    #         # поиск допустимого начального значения
-    #         start_pos = self._positioning(start_pos=start, limit=0, input_file=file,
-    #                                       func=WindowFromFile.decrement)
-    #         # если начальное смещение не ноль и требуется заголовок
-    #         if start_pos != 0 and self.header:
-    #             start_pos_head = 0
-    #             end_pos_head = self._positioning(start_pos=0, limit=file_size, input_file=file, func=self.increment)
-    #         # поиск допустимого конечного значения
-    #         if end >= file_size:
-    #             end_pos = file_size
-    #         else:
-    #             end_pos = self._positioning(start_pos=end, limit=file_size, input_file=file, func=self.increment)
-    #
-    #         # формирование результата
-    #         header = None
-    #         if self.header and start_pos != 0:
-    #             file.seek(start_pos_head)
-    #             header = bytes.decode(file.read(end_pos_head - start_pos_head))
-    #             if self._delimiter is None:
-    #                 self._delimiter = ItemInCSV.get_separator(header)
-    #             header = header.split(self._delimiter)
-    #
-    #         file.seek(start_pos)
-    #         body = file.read(end_pos - start_pos)
-    #         body = list(map(bytes.decode, body.rstrip().split(self.line_end_char)))
-    #         data = []
-    #         if self._delimiter is None:
-    #             self._delimiter = ItemInCSV.get_separator(body[0])
-    #         for line in body:
-    #             data.append(line.split(self._delimiter))
-    #
-    #
-    #
-    #         # если требуется заголовок, то добавляем его
-    #
-    #
-    #         return result
+    def get_row_in_window(self, start: int, end: int) -> dict:
+        """
+        Функция для поиска целых строк по начальному и конечному байту
+
+        :param start: начальное положение каретки
+        :param end: конечное положение каретки
+        :return:  словарь в виде
+                    {"header": [cell_head_1, cell_head_2, ... , cell_head_N],
+                     "types":  [cell_type_1, cell_type_2, ... , cell_type_N],
+                     "data":  [[cell_1, cell_2, ... , cell_N],
+                               [cell_1, cell_2, ... , cell_N],
+                                        ...
+                               [cell_1, cell_2, ... , cell_N]],
+                     "stopByte": байт_начала_окна,
+                     "startByte": байт_конца_окна}
+        """
+
+        result = {}
+
+        if start > end:
+            raise StartEndPositionError("START position must be less then END position")
+        with open(self._filename, "rb") as file:
+            if not file.readable():
+                raise FileError("File can't be read")
+            if not file.seekable():
+                raise FileError("File can't be seek")
+            # получаем длину всего файла в байтах
+            file_size = os.path.getsize(self._filename)
+            # поиск символа конца строки для исходного файла
+            self._get_end_char(file, file_size=file_size)
+            if start > file_size:
+                raise StartEndPositionError("START position must be less then size of file")
+            # поиск допустимого начального значения
+            start_pos = self._positioning(start_pos=start, limit=0, input_file=file, func=self.decrement)
+            # если начальное смещение не ноль и требуется заголовок
+            if start_pos != 0 and self.header:
+                start_pos_head = 0
+                end_pos_head = self._positioning(start_pos=0, limit=file_size, input_file=file, func=self.increment)
+                file.seek(start_pos_head)
+                header = bytes.decode(file.read(end_pos_head - start_pos_head))
+                self._delimiter = ItemInCSV.get_separator(header)
+                # header = header.split(self._delimiter)
+            # поиск допустимого конечного значения
+            if end >= file_size:
+                end_pos = file_size
+            else:
+                end_pos = self._positioning(start_pos=end, limit=file_size, input_file=file, func=self.increment)
+
+            # формирование результата
+            file.seek(start_pos)
+            # читаем полученное кол-во байт
+            body = file.read(end_pos - start_pos)
+            body = list(map(bytes.decode, body.rstrip().split(self.line_end_char)))
+            if self._delimiter is None:
+                self._delimiter = ItemInCSV.get_separator(body[0])
+
+            if start_pos == 0 and self.header:
+                header = body[0]
+                body = body[1:]
+
+            data = []
+            for line in body:
+                data.append(line.split(self._delimiter))
+
+            if not self.header:
+                header = self._delimiter.join(['null'] * len(data[0]))
+
+            result["header"] = header.rstrip().split(self._delimiter)
+            result['data'] = data
+            result['stopByte'] = end_pos
+            result['startByte'] = start_pos
+
+        # определяем текущую попытку как нулевую. Используется для поптки открытия файла в разных кодировках
+        attempt = 0
+        # определяем кодировку по умолчанию как UTF-8
+        encoding = "UTF-8"
+        while attempt < 2:
+            try:
+                types = ItemInCSV.get_types(self._filename, encoding=encoding,
+                                            separator=self._delimiter, header=self.header)
+
+                result["types"] = types
+                break
+            except UnicodeDecodeError as e:
+                # если была ошибка в кодировке, увеличиваем счетчик ошибок
+                # и пробуем открыть с кодировкой по умолчанию
+                attempt += 1
+                encoding = None
+            except Exception as e:
+                print(f"Error: \n{e}")
+                break
+
+        return result
 
     def get_numbers_rows(self, start: int, count: int) -> dict:
         """
@@ -186,7 +218,11 @@ class WindowFromFile:
                     {"header": [cell_head_1, cell_head_2, ... , cell_head_N],
                      "types":  [cell_type_1, cell_type_2, ... , cell_type_N],
                      "data":  [[cell_1, cell_2, ... , cell_N],
-                               [cell_1, cell_2, ... , cell_N]]}
+                               [cell_1, cell_2, ... , cell_N],
+                                        ...
+                               [cell_1, cell_2, ... , cell_N]],
+                     "stopByte": байт_начала_окна,
+                     "startByte": байт_конца_окна}
         """
         # результат для возврата
         result = {}
@@ -207,7 +243,7 @@ class WindowFromFile:
             start_pos = self._positioning(start_pos=start, limit=0, input_file=file, func=self.decrement)
             # если начальное смещение не ноль и требуется заголовок
             # ищем строку заголовка - начальное значение - 0, а конечное - ищем
-            if self.header:
+            if start_pos != 0 and self.header:
                 start_pos_head = 0
                 end_pos_head = self._positioning(start_pos=0, limit=file_size, input_file=file, func=self.increment)
                 # удаляем символы новой строки в конце
@@ -227,32 +263,34 @@ class WindowFromFile:
                     # если стартовая позиция равна ноль и есть заголовок, то читаем строку и пропускаем ее,
                     # так как заголовок уже есть в result
                     if start_pos == 0 and self.header:
-                        file.readline()
+                        header = file.readline()
                     # поиск заданного кол-ва строк
                     current_count = 0
                     # читам по одной строке
-
-                    types = ItemInCSV.get_types(self._filename, encoding=encoding,
-                                                separator=self._delimiter, header=self.header)
-
-                    result["types"] = types
                     # пока не набрали требуемое кол-во строк и пока не достигли конца файла, читаем
                     data = []
                     while current_count < count and file.tell() < file_size:
                         line = file.readline().rstrip()
                         if self._delimiter is None:
                             self._delimiter = ItemInCSV.get_separator(line)
-                        data.append(line.split(self.delimiter))
+                        data.append(line.split(self._delimiter))
                         current_count += 1
 
                     if not self.header:
-                        header = [None] * len(data[0])
+                        header = ['null'] * len(data[0])
                     else:
-                        header = header.split(self.delimiter)
+                        header = header.rstrip().split(self._delimiter)
 
+                    result["header"] = header
                     result["data"] = data
+                    result['startByte'] = start_pos
                     result["stopByte"] = file.tell()
-                    print(file.tell())
+                    # определение типов столбцов
+                    types = ItemInCSV.get_types(self._filename, encoding=encoding,
+                                                separator=self._delimiter, header=self.header)
+
+                    result["types"] = types
+                    # print(file.tell())
                     break
             except UnicodeDecodeError as e:
                 # если была ошибка в кодировке, увеличиваем счетчик ошибок
@@ -262,14 +300,18 @@ class WindowFromFile:
             except Exception as e:
                 print(f"Error: \n{e}")
                 break
-
-        result["header"] = header
         return result
 
 
 if __name__ == "__main__":
-    data = WindowFromFile(r'C:\work\parsing_file\input_file\output.txt', header=True)
-    print(data.get_numbers_rows(0, 2))
+    data_test = WindowFromFile(r'C:\work\parsing_file\input_file\output.txt', header=True)
+    print(data_test.get_numbers_rows(100, 2))
     print("low")
-    data = WindowFromFile(r'C:\work\parsing_file\input_file\test_mid.csv', header=True)
-    print(data.get_numbers_rows(0, 2))
+    data_test = WindowFromFile(r'C:\work\parsing_file\input_file\test_mid.csv', header=True)
+    print(data_test.get_numbers_rows(100, 2))
+
+    data_test = WindowFromFile(r'C:\work\parsing_file\input_file\output.txt', header=True)
+    print(data_test.get_row_in_window(100, 600))
+    print("low")
+    data_test = WindowFromFile(r'C:\work\parsing_file\input_file\test_mid.csv', header=True)
+    print(data_test.get_row_in_window(100, 600))

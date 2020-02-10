@@ -1,5 +1,5 @@
-var host = 'http://77.244.211.197'
-// var host = ''
+// host = 'http://77.244.211.197'
+var host = ''
 
 // var cat = {
 //   "bread": [],

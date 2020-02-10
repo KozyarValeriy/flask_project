@@ -48,7 +48,7 @@ def file_to_json(filename: str, header=True) -> dict:
                 # а в качестве заголовка используем None
                 else:
                     data.insert(0, head)
-                    result['header'] = [None] * len(head)
+                    result['header'] = ['null'] * len(head)
 
                 result['data'] = data
                 # получаем типы для столбцов в файле и добавляем результат в ответ
