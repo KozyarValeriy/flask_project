@@ -43,6 +43,10 @@ html, body{
     font-size: 18px;
     margin-right: 4px;
 }
+.body__tree li.active{
+    color: red;
+    pointer-events: none;
+}
 .body__tree li > span.size {
     margin-left: auto;
 }
@@ -61,7 +65,7 @@ html, body{
 }
 
 .body__view{
-    width: 100%;
+    width: calc(70% - 8px);
     display: flex;
     flex-direction: column;
 }
@@ -75,12 +79,20 @@ html, body{
 }
 .body__file{
     height: 100%;
+    width: 100%;
     padding: 20px;
     border: 1px solid #000;
-    overflow-y: auto;
+    overflow: auto;
     position: relative;
 }
-
+.body__paginate{
+    width: 100%;
+    display: none;
+    align-items: center;
+}
+.body__paginate > * {
+    margin-right: 8px
+}
 .body__loader {
     background-color: #fff;
     top: 0;

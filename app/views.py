@@ -4,7 +4,7 @@ from app import app
 from flask import render_template
 from flask import jsonify
 from flask import request
-from app import FileManager, Filer
+from app import FileManager
 from ExternalModule import Parser
 
 
@@ -33,21 +33,16 @@ def open_file(filename):
         header = False
     else:
         header = True
-    # if os.path.getsize(filename) > 10000000:
+    file = Parser.WindowFromFile(filename, header=header)
     start = int(request.args.get('startByte')) if request.args.get('startByte') else 0
     row_count = int(request.args.get('countLines')) if request.args.get('countLines') else 100
     query = request.args.get('query')
-    # stop = int(request.args.get('stop')) if request.args.get('stop') else 500
-    print(start, row_count, query)
-    print(os.path.getsize(filename))
-
-    file = Parser.WindowFromFile(filename, header=header)
-    result = file.get_numbers_rows(start, row_count)
-    # result["query"] = query
+    step = request.args.get('step')
+    if step == "prev":
+        result = file.get_previous_numbers_rows(start, row_count)
+    else:
+        result = file.get_numbers_rows(start, row_count)
     return jsonify(result)
-    # result = Filer.file_to_json(filename, header=header)
-    # # result["query"] = query
-    # return jsonify(result)
 
 
 @app.route('/api/v1/openfile/<filename>/<int:start>/<int:row_count>')
