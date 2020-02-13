@@ -68,6 +68,17 @@ class WindowFromFile:
         """ Функция для уменьшения входного числа на шаг (шаг default=1) """
         return number - step
 
+    # def convert_type(self, data: dict) -> dict:
+    #     if "int" in data["types"]:
+    #         int_index = []
+    #         for index in range(len(data["types"])):
+    #             if data["types"][index] == "int":
+    #                 int_index.append(index)
+    #         for row in data["data"]:
+    #
+    #
+    #     return data
+
     def set_end_char(self):
         """ Функция для поиска символа конца строки. """
         # если еще не определили символ
@@ -105,6 +116,7 @@ class WindowFromFile:
                 self._delimiter = ItemInCSV.get_separator(line)
                 self._types = ItemInCSV.get_types(self._filename, encoding=encoding,
                                                   separator=self._delimiter, header=self.header)
+                # self._types = ['null']
                 break
             except UnicodeDecodeError:
                 # если была ошибка в кодировке, увеличиваем счетчик ошибок

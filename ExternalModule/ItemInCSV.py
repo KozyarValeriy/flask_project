@@ -64,7 +64,7 @@ def get_types(input_name, encoding=None, separator=None, header=True, count_line
                 value = 1
             # if value is in date type inrease date counter
             if (re.match(r"[0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{4}", str(value)) or
-                re.match(r"[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}", str(value))) and (len(str(value)) in range(8, 11)):
+                    re.match(r"[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}", str(value))) and (len(str(value)) in range(8, 11)):
                 head_dict["date"] += 1
             # try to recognise if value is email
             elif re.match(regex, str(value)):
@@ -92,6 +92,7 @@ def get_types(input_name, encoding=None, separator=None, header=True, count_line
 
 def into_dict(input_name, head=None):
     """
+    :param head:
     :param input_name: input csv path
     :return: dictionary output with data:list of all lines in csv
                                     header:list of headers
