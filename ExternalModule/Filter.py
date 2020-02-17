@@ -1,3 +1,8 @@
+"""
+    Версия от 17.02.20.
+"""
+
+
 import pandas as pd
 import numpy as np
 
@@ -37,7 +42,7 @@ def definer(data_frame, filter_string):
     return temp_frame
 
 
-def result(frame, query):
+def result(query, frame):
     frames = []
     for item in query.split("|"):
         frames.append(definer(frame, item))
@@ -50,10 +55,10 @@ def filter_frame(data_frame, filter_string):
     fl = True
     if filter_string.count("(") == filter_string.count(")"):
         if filter_string.count("(") == 0:
-            result_frame = result(data_frame, filter_string)
+            result_frame = result(filter_string, data_frame)
             fl = False
         i = 0
-        while ("(" in temp_string or temp_string.count("df_") > 1) and fl:
+        while ("(" in temp_string or temp_string.count("df_") >= 1) and fl:
             last_index = temp_string.rfind("(")
             first_index = temp_string.find(")", last_index)
             sub_string = temp_string[last_index:first_index + 1]
@@ -77,14 +82,25 @@ def filter_frame(data_frame, filter_string):
                     else:
                         temp_frame = result(item.lstrip(), data_frame)
                 curent_frame = list_of_frames[frame_index]
-                temp_frame = pd.concat([temp_frame, curent_frame])
+                if operator == "|":
+                    temp_frame = pd.concat([temp_frame, curent_frame]).drop_duplicates()
+                else:
+                    temp_frame = pd.merge(temp_frame, curent_frame)
                 list_of_frames[frame_index] = temp_frame
                 temp_string = temp_string.replace(sub_string, f"df_{frame_index}")
             elif sub_string.count("df_") > 1:
                 temp_sub_string = sub_string
+                if (sub_string.rfind("df_") - sub_string.find("df_")) >= 7:
+                    inner_str = sub_string[sub_string.find("df_") + 5:sub_string.rfind("df_") - 1]
+                    inner_res = result(inner_str, data_frame)
+                    sub_string = sub_string.replace(inner_str, f"df_{i}")
+                    list_of_frames.append(inner_res)
+                    i += 1
+
                 while sub_string.count("df") > 1:
                     first_index = sub_string.find("df_")
-                    if "&" in sub_string[first_index:]:
+                    lst_index = sub_string.rfind("df_")
+                    if "&" in sub_string[first_index:lst_index]:
                         operator = "&"
                     else:
                         operator = "|"
@@ -92,20 +108,25 @@ def filter_frame(data_frame, filter_string):
                     first_frame_index = int(sub_string[operator_index - 1])
                     second_frame_index = int(sub_string[operator_index + 4])
                     f1, f2 = list_of_frames[first_frame_index], list_of_frames[second_frame_index]
-                    temp_frame = pd.concat([f1, f2])
+                    if operator == "|":
+                        temp_frame = pd.concat([f1, f2])
+                    else:
+                        temp_frame = pd.merge(f1, f2)
+                    # temp_frame = pd.concat([f1,f2])
                     list_of_frames[first_frame_index] = ""
                     list_of_frames[second_frame_index] = temp_frame
                     sub_string = sub_string.replace(sub_string[operator_index - 4:operator_index + 5],
                                                     f"df_{second_frame_index}")
                 temp_string = temp_string.replace(temp_sub_string, sub_string)
             if len(temp_string) == 4:
-                result_frame = list_of_frames[second_frame_index]
+                last_frame_index = int(temp_string[temp_string.find("_") + 1])
+                result_frame = list_of_frames[last_frame_index]
+                break
     return result_frame
 
 
 if __name__ == "__main__":
-    f_string = "step_id > 2 & step_id < 5 "
-    # f_string = "(step_id < 5 | (step_id = 10 | step_id = 11))&(timestamp=3 | timestamp=4)&(timestamp = 2 |
-    # submission_status like 'correct lol')"
+    # f_string = "(step_id > 2)|timestamp = 5 &(submission_status like 'co')"
+    f_string = "(step_id<10 & timestamp>1)"
     my_frame = pd.read_csv("input/submissions_data_train.csv", sep=",")
     print(filter_frame(my_frame, f_string))
