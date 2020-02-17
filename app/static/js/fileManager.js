@@ -1,3 +1,7 @@
+/*
+    Автор: Горшков Павел
+*/
+
 function FileManager () {
   this.cat = {
     bread: [],
