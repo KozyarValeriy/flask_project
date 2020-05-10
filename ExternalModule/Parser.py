@@ -21,8 +21,8 @@ class FileError(Exception):
 
 
 class WindowFromFile:
-    """ Класс для получения целых строк в диапазоне от начального до конечного байта.
-
+    """ Класс для получения целых строк в диапазоне от начального
+        до конечного байта.
     """
 
     def __init__(self, filename: str, header=True, string_end=None):

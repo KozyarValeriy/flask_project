@@ -3,27 +3,26 @@
     Автор: Захваткин Александр
 """
 
-
 import re
 
-sep_list = [",", "|", ";", "\t"]
+SEP_LIST = [",", "|", ";", "\t"]
 
 
-def get_separator(head):
-    """
+def get_separator(head: str) -> str:
+    """ Функция для определения разделителя по шапке файла
+
     :return: return separator from input csv file
     """
-    dic = {}
-    for item in sep_list:
-        dic[item] = 0
-    for item in sep_list:
-        dic[item] = len(head.split(item))
-    separator = max(dic, key=dic.get)
+    all_sep = {}
+    for sep in SEP_LIST:
+        all_sep[sep] = len(head.split(sep))
+    separator = max(all_sep, key=all_sep.get)
     return separator
 
 
-def get_headers(head, separator=None):
-    """
+def get_headers(head, separator=None) -> list:
+    """ Функция для получения заголовка файла
+
     :return: return list of heads from input csv file
     """
     if separator is None:
@@ -40,11 +39,20 @@ def get_types(input_name, encoding=None, separator=None, header=True, count_line
     heads_types = []
     # open file to read, if lines in file < 1000 , read all file, else read 1000 lines
     # regex = r"\S+@\S+"
-    regex = r"(?:[a-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+\/=?^_`{|}~-]+)*|\"" \
-            r"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")" \
-            r"@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]" \
-            r"|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:" \
-            r"[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+    pattern_email = re.compile(r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\""
+                               r"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\"
+                               r"[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+"
+                               r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}"
+                               r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:"
+                               r"[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])")
+    # regex = r"(?:[a-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+\/=?^_`{|}~-]+)*|\"" \
+    #         r"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")" \
+    #         r"@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]" \
+    #         r"|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:" \
+    #         r"[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+    pattern_date_1 = re.compile(r"[0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{4}")
+    pattern_date_2 = re.compile(r"[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}")
+
     with open(input_name, encoding=encoding) as file:
         if header:
             file.readline()
@@ -69,19 +77,23 @@ def get_types(input_name, encoding=None, separator=None, header=True, count_line
             if value.replace(".", "", 1).isdigit():
                 value = 1
             # if value is in date type inrease date counter
-            if (re.match(r"[0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{4}", str(value)) or
-                    re.match(r"[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}", str(value))) and (len(str(value)) in range(8, 11)):
+            # if (re.match(r"[0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{4}", str(value)) or
+            #     re.match(r"[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}", str(value)))
+            #     and (len(str(value)) in range(8, 11)):
+            if (pattern_date_1.match(str(value)) or pattern_date_2.match(str(value))) \
+                    and (len(str(value)) in range(8, 11)):
                 head_dict["date"] += 1
             # try to recognise if value is email
-            elif re.match(regex, str(value)):
+            # elif re.match(regex, str(value)):
+            elif pattern_email.match(str(value)):
                 head_type = "email"
-            # try to recognise if value is unic id
+            # try to recognise if value is unique id
             elif len(set(head_values)) == len(list_items):
                 head_type = f'uid'
-            # if value is int type inrease int counter
-            elif type(value) == type(1) or type(value) == type(1.0):
+            # if value is int type increase int counter
+            elif isinstance(value, int) or isinstance(value, float):
                 head_dict['int'] += 1
-            # count unic elemets in rows if unic items less 50 % then type of column is category
+            # count unique elements in rows if unique items less 50 % then type of column is category
             elif len(set(head_values)) < len(list_items) * 0.5:
                 head_type = "category"
             # if value no match previous statements it's string and  increase string  counter
@@ -96,7 +108,7 @@ def get_types(input_name, encoding=None, separator=None, header=True, count_line
     return heads_types
 
 
-def into_dict(input_name, head=None):
+def into_dict(input_name, head=None) -> dict:
     """
     :param head:
     :param input_name: input csv path

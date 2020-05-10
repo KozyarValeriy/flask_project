@@ -1,7 +1,7 @@
 """
     Преобразование DataFrame в JSON и обратно.
     Автор: Валерий Козяр
-    Версия 1.0.0
+    Версия 1.0.1
 """
 
 
@@ -10,7 +10,6 @@ import pandas as pd
 
 def get_DataFrame_from_JSON(start_dict: dict) -> pd.DataFrame:
     """ Функция для получения DataFrame из JSON """
-
     tmp_dict = dict()
     for i in range(len(start_dict['header'])):
         tmp_dict[start_dict['header'][i]] = list(cell[i] for cell in start_dict['data'])
@@ -26,7 +25,6 @@ def get_DataFrame_from_JSON(start_dict: dict) -> pd.DataFrame:
 
 def get_JSON_from_DataFrame(df: pd.DataFrame, start_byte: int, stop_byte: int, types: list) -> dict:
     """ Функция для получения JSON из DataFrame """
-
     result = dict()
     result["data"] = list(list(line) for line in df.values)
     result["header"] = list(df.keys())
@@ -34,6 +32,20 @@ def get_JSON_from_DataFrame(df: pd.DataFrame, start_byte: int, stop_byte: int, t
     result["stopByte"] = stop_byte
     result["types"] = types
     return result
+
+
+def string_to_int(start_string: str, default) -> int:
+    """ Функция для получения числа из строки
+
+    :param start_string: строка, которую надо преобразовать в число,
+    :param default: значени по умолчанию, если преобразовать не получилось,
+    :return: полученное число.
+    """
+    try:
+        number = int(start_string)
+    except ValueError:
+        number = default
+    return number
 
 
 if __name__ == "__main__":

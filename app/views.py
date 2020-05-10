@@ -11,6 +11,7 @@ from app import app
 from flask import render_template
 from flask import jsonify
 from flask import request
+
 from app import FileManager
 from ExternalModule import Parser, QueryTask, Filter
 
@@ -41,13 +42,11 @@ def open_file(filename):
     else:
         header = True
     file = Parser.WindowFromFile(filename, header=header)
-
     # получение GET параметров
-    start = int(request.args.get('startByte')) if request.args.get('startByte') else 0
-    row_count = int(request.args.get('countLines')) if request.args.get('countLines') else 100
+    start = QueryTask.string_to_int(request.args.get('startByte'), default=0)
+    row_count = QueryTask.string_to_int(request.args.get('countLines'), default=100)
     query = request.args.get('query')
     step = request.args.get('step')
-
     if step == "prev":
         result = file.get_previous_numbers_rows(start, row_count)
     else:
@@ -58,7 +57,6 @@ def open_file(filename):
         # получение DataFrame с наложенными фильтрами
         df = Filter.filter_frame(df, query)
         result = QueryTask.get_JSON_from_DataFrame(df, result["startByte"], result["stopByte"], result["types"])
-
         # добавление строк, если в результате получили меньше row_count
         start = result["startByte"]
         new_row_count = row_count
@@ -73,7 +71,6 @@ def open_file(filename):
             df = Filter.filter_frame(df, query)
             result = QueryTask.get_JSON_from_DataFrame(df, result["startByte"], result["stopByte"], result["types"])
         result["data"] = result["data"][:row_count]
-
     return jsonify(result)
 
 
@@ -87,19 +84,3 @@ def open_big_file(filename, start, row_count):
 @app.route('/')
 def main_page():
     return render_template("index.html")
-
-
-# @app.route('/', methods=["POST", "GET"])
-# def main_page():
-#     if request.method == "POST":
-#         query = request.form.get("query")
-#         print(query)
-#         query123 = request.form.get("query123")
-#         print(query)
-#         if query123 is None:
-#             print(None)
-#     else:
-#         query = ""
-#
-#     print(query)
-#     return render_template("test.html")

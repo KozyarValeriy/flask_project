@@ -6,7 +6,6 @@
 
 
 import pandas as pd
-import numpy as np
 
 
 def definer(data_frame, filter_string):
@@ -36,10 +35,9 @@ def definer(data_frame, filter_string):
     length = len(column_list)
     for i in range(0, length):
         if operations_list[i] != 'like':
-            str = column_list[i] + " " + operations_list[i] + " " + values_list[i]
-            temp_frame = temp_frame.query(str)
+            line_str = column_list[i] + " " + operations_list[i] + " " + values_list[i]
+            temp_frame = temp_frame.query(line_str)
         else:
-            str = column_list[i] + " " + operations_list[i] + " " + values_list[i]
             temp_frame = temp_frame[temp_frame[column_list[i]].str.contains(values_list[i][1:-1])]
     return temp_frame
 
@@ -83,11 +81,11 @@ def filter_frame(data_frame, filter_string):
                         frame_index = int(item[item.find("_") + 1])
                     else:
                         temp_frame = result(item.lstrip(), data_frame)
-                curent_frame = list_of_frames[frame_index]
+                current_frame = list_of_frames[frame_index]
                 if operator == "|":
-                    temp_frame = pd.concat([temp_frame, curent_frame]).drop_duplicates()
+                    temp_frame = pd.concat([temp_frame, current_frame]).drop_duplicates()
                 else:
-                    temp_frame = pd.merge(temp_frame, curent_frame)
+                    temp_frame = pd.merge(temp_frame, current_frame)
                 list_of_frames[frame_index] = temp_frame
                 temp_string = temp_string.replace(sub_string, f"df_{frame_index}")
             elif sub_string.count("df_") > 1:
